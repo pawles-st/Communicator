@@ -1,0 +1,41 @@
+import mysql.connector
+import datetime
+
+def get_all_users(connection):
+	cursor = connection.cursor()
+	cursor.execute("SELECT * FROM user")
+	result = cursor.fetchall()
+	for row in result:
+		print(row)
+	cursor.close()
+
+def add_a_user(connection, id, name, password, date, mail, key):
+	cursor = connection.cursor()
+
+	sql = "INSERT INTO user (user_id, user_name, user_password, date_of_join, user_email, user_pk) VALUES (%s,%s,%s,%s,%s,%s)"
+
+	user_data = (id,name,password,date,mail,key)
+
+	cursor.execute(sql, user_data)
+	connection.commit()
+	cursor.close()
+
+
+cnx = mysql.connector.connect(user='root',password='root',
+				host='localhost', database='chat')
+
+cursor = cnx.cursor()
+add_a_user(cnx,1,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
+get_all_users(cnx)
+
+#cursor.execute("CREATE DATABASE chat")
+#cursor.execute("CREATE TABLE message (message_id INT PRIMARY KEY, sender_id INT, message_text VARCHAR(1000), datetime_of_sending DATETIME, conversation_id INT, FOREIGN KEY(conversation_id) REFERENCES conversation(conversation_id) ON DELETE SET NULL)")
+#cursor.execute("CREATE TABLE conversation (conversation_id INT PRIMARY KEY, conversation_name VARCHAR(100))")
+#cursor.execute("CREATE TABLE conversation_member (user_id INT NOT NULL, conversation_id INT, joined_datetime DATETIME, left_datetime DATETIME, FOREIGN KEY(user_id) REFERENCES user(user_id), FOREIGN KEY (conversation_id) REFERENCES conversation(conversation_id), CONSTRAINT Pk_conv_member PRIMARY KEY(user_id, conversation_id))")
+#cursor.execute("CREATE TABLE user (user_id INT NOT NULL PRIMARY KEY, user_name VARCHAR(100), user_password VARCHAR(60), date_of_join DATETIME)")
+#cursor.execute("ALTER TABLE user ADD user_email VARCHAR(150)")
+#cursor.execute("ALTER TABLE user ADD user_pk VARCHAR(100)")
+
+
+
+
