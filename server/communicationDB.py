@@ -9,7 +9,7 @@ def get_all_users(connection):
 		print(row)
 	cursor.close()
 
-def add_a_user(connection, id, name, password, date, mail, key):
+def create_user(connection, id, name, password, date, mail, key):
 	cursor = connection.cursor()
 
 	sql = "INSERT INTO user (user_id, user_name, user_password, date_of_join, user_email, user_pk) VALUES (%s,%s,%s,%s,%s,%s)"
@@ -20,12 +20,43 @@ def add_a_user(connection, id, name, password, date, mail, key):
 	connection.commit()
 	cursor.close()
 
+def create_conversation(connection, id, name):
+	cursor = connection.cursor()
+
+	sql = "INSERT INTO conversation (conversation_id, conversation_name) VALUES (%s,%s)"
+
+	conv_data = (id,name)
+
+	cursor.execute(sql, conv_data)
+	connection.commit()
+	cursor.close()
+
+def create_conversation_member(connection, userid, convid, date_of_join):
+	cursor = connection.cursor()
+
+	sql = "INSERT INTO conversation_member (user_id, conversation_id, joined_datetime) VALUES (%s,%s,%s)"
+	conv_member_data = (userid,convid,date_of_join)
+
+	cursor.execute(sql,conv_member_data)
+	connection.commit()
+	cursor.close()
+
+def create_message(connection, message_id, user_id, text, date_of_send, conv_id):
+	cursor = connection.cursor()
+
+	sql = "INSERT INTO message (user_id, sender_id, text, send_date, conv_id) VALUES (%s,%s,%s,%s,%s)"
+	conv_member_data = (message_id,user_id,text,date_of_send,conv_id)
+
+	cursor.execute(sql, conv_member_data)
+	connection.commit()
+	cursor.close()
+
 
 cnx = mysql.connector.connect(user='root',password='root',
 				host='localhost', database='chat')
 
 cursor = cnx.cursor()
-add_a_user(cnx,1,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
+create_user(cnx,1,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
 get_all_users(cnx)
 
 #cursor.execute("CREATE DATABASE chat")
