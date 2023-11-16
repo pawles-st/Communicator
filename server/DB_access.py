@@ -9,6 +9,13 @@ def get_all_users(connection):
 		print(row)
 	cursor.close()
 
+def get_user(connection, mail):
+	cursor = connection.cursor()
+	query = "SELECT * FROM user WHERE user_email = %s"
+	cursor.execute(query,(mail,))
+	result = cursor.fetchone()
+	return result
+
 def create_user(connection, id, name, password, date, mail, key):
 	cursor = connection.cursor()
 
@@ -56,7 +63,7 @@ cnx = mysql.connector.connect(user='root',password='root',
 				host='localhost', database='chat')
 
 cursor = cnx.cursor()
-create_user(cnx,1,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
+#create_user(cnx,2,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
 get_all_users(cnx)
 
 #cursor.execute("CREATE DATABASE chat")
