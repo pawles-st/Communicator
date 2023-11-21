@@ -21,7 +21,8 @@ protocol = {
         "userNotFound": "USER_NOT_FOUND",               # serwer
         "wrongPassword": "WRONG_PASSWORD",              # serwer
         "usernameTaken": "USERNAME_TAKEN",
-        "notLoggedIn": "NOT_LOGGED_IN"
+        "notLoggedIn": "NOT_LOGGED_IN",
+        "registerSuccess": "REGISTER_SUCCESS",
     },
     "fromClient": {
         "send": "SEND",                                 # klient
@@ -30,7 +31,8 @@ protocol = {
         "disconnect": "DISCONNECT",                     # klient
         "getUsers": "GET_ONLINE",                       # klient
         "login": "LOGIN",
-        "register": "REGISTER"
+        "register": "REGISTER",
+        "sendKey:": "SEND_KEY",
     }
 
 }
@@ -41,7 +43,7 @@ def on_new_client(clientsocket, addr, id):
     try:
         # clientsocket.send(bytes("WELCOME " + str(id) + '\n', "utf-8"))
         # clientsocket.send(bytes("ONLINE_LIST" + str(list(clients.keys())), "utf-8"))
-        clientsocket.send(bytes(protocol["fromServer"]["connectionEstablished"], "utf-8"))
+        #clientsocket.send(bytes(protocol["fromServer"]["connectionEstablished"], "utf-8")) # TODO: not needed?
         while True:
             msg = clientsocket.recv(1024)
             print(str(id) + ': ' + msg.decode("utf-8"))
@@ -99,15 +101,15 @@ def on_new_client(clientsocket, addr, id):
                                 clients[id]["socket"].append(clientsocket)
                             else:
                                 clients[id] = ({"socket": [clientsocket], "requests": [], "connected": -1})
-                            clientsocket.send(bytes(protocol["fromServer"]["welcome"] + ' ' + str(id) + ' ' + credentials[1] + ' ' + str(list(clients.keys())), "utf-8"))
+                            clientsocket.send(bytes(protocol["fromServer"]["registerSuccess"] + ' ' + str(id) + ' ' + credentials[1] + ' ' + str(list(clients.keys())), "utf-8"))
                             for client in clients:
                                 if clients[client]["connected"] == -1 and client != id:
                                     for sock in clients[client]["socket"]:
                                         sock.send(bytes(protocol["fromServer"]["newUser"] + ' ' + str(id), "utf-8"))
-                            users_db = open("./users_pseudo_db", "a")
-                            users_db.write("\n" + str(current_client_id) + " " + credentials[1] + " " + credentials[2])
-                            users_db.close()
-                            current_client_id += 1
+                            #users_db = open("./users_pseudo_db", "a")
+                            #users_db.write("\n" + str(current_client_id) + " " + credentials[1] + " " + credentials[2])
+                            #users_db.close()
+                            #current_client_id += 1
             elif id == -1:
                 clientsocket.send(bytes(protocol["fromServer"]["notLoggedIn"], "utf-8"))
             elif msg.decode() == protocol["fromClient"]["disconnect"] and clients[id]["connected"] != -1:
@@ -156,7 +158,8 @@ def on_new_client(clientsocket, addr, id):
             else:
                 for sock in clients[clients[id]["connected"]]["socket"]:
                     sock.send(bytes(protocol["fromServer"]["receivedMessage"] + ' ' + str(id) + " " + msg.decode("utf-8"), "utf-8"))
-    except ConnectionResetError:
+    #except ConnectionResetError:
+    except Exception:
         print("uzytkownik", id, addr, "rozlaczyl sie")
         for client in clients:
             if clients[client]["connected"] == -1 and client != id:
@@ -177,7 +180,9 @@ def on_new_client(clientsocket, addr, id):
 
 s = socket.socket()
 host = socket.gethostname()
+host = socket.gethostbyname(host)
 port = 50005
+print(host)
 
 print('Serwer dziala!')
 
