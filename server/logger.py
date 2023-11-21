@@ -3,6 +3,8 @@ import datetime
 
 from test import *
 
+from server.DB_access import get_user, get_user_password
+
 cnx = mysql.connector.connect(user='root', password='root',
                               host='localhost', database='chat')
 
@@ -18,15 +20,19 @@ def register(connection, username, mail, password):
         return "User registered successfully!"
 
 
-def login(connection, username, mail, password):
-    existing_user = get_user(mail)
+def login(connection, mail, password):
+    existing_user = get_user(connection,mail)
     if existing_user:
-        # login
-        cursor.close()
-        return "User logged in successfully!"
+        check = get_user_password(connection,mail,password)
+        if check:
+            cursor.close()
+            return True
+        else
+            cursor.close()
+            return False
     else:
         cursor.close()
-        return "Error: This email is not registered."
+        return False
 
 register(cnx, "Wojtek", "mail@wp.pl", "123456")
 

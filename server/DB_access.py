@@ -16,12 +16,19 @@ def get_user(connection, mail):
 	result = cursor.fetchone()
 	return result
 
+def get_user_password(connection,mail,password):
+	cursor = connection.cursor()
+	query = "SELECT * FROM user WHERE user_email = %s AND user_password = %s"
+	cursor.execute(query,(mail,password,))
+	result = cursor.fetchone()
+	return result
+
 def create_user(connection, id, name, password, date, mail, key):
 	cursor = connection.cursor()
 
-	sql = "INSERT INTO user (user_id, user_name, user_password, date_of_join, user_email, user_pk) VALUES (%s,%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO user (user_name, user_password, date_of_join, user_email, user_pk) VALUES (%s,%s,%s,%s,%s)"
 
-	user_data = (id,name,password,date,mail,key)
+	user_data = (name,password,date,mail,key)
 
 	cursor.execute(sql, user_data)
 	connection.commit()
@@ -48,11 +55,11 @@ def create_conversation_member(connection, userid, convid, date_of_join):
 	connection.commit()
 	cursor.close()
 
-def create_message(connection, message_id, user_id, text, date_of_send, conv_id):
+def create_message(connection, message_id, sender_email, text, date_of_send, conv_id):
 	cursor = connection.cursor()
 
-	sql = "INSERT INTO message (user_id, sender_id, text, send_date, conv_id) VALUES (%s,%s,%s,%s,%s)"
-	conv_member_data = (message_id,user_id,text,date_of_send,conv_id)
+	sql = "INSERT INTO message (message_id, sender_email, text, send_date, conv_id) VALUES (%s,%s,%s,%s,%s)"
+	conv_member_data = (message_id,sender_email,text,date_of_send,conv_id)
 
 	cursor.execute(sql, conv_member_data)
 	connection.commit()
