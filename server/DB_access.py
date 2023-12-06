@@ -1,5 +1,6 @@
 import mysql.connector
 import datetime
+from utils import db_credentials
 
 def get_all_users(connection):
 	cursor = connection.cursor()
@@ -66,12 +67,13 @@ def create_message(connection, message_id, sender_email, text, date_of_send, con
 	cursor.close()
 
 
-cnx = mysql.connector.connect(user='root',password='root',
-				host='localhost', database='chat')
+cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
+								   host=db_credentials["host"], database=db_credentials["database"],
+								   port=db_credentials["port"])
 
 cursor = cnx.cursor()
 #create_user(cnx,2,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
-get_all_users(cnx)
+# get_all_users(cnx)
 
 #cursor.execute("CREATE DATABASE chat")
 #cursor.execute("CREATE TABLE message (message_id INT PRIMARY KEY, sender_id INT, message_text VARCHAR(1000), datetime_of_sending DATETIME, conversation_id INT, FOREIGN KEY(conversation_id) REFERENCES conversation(conversation_id) ON DELETE SET NULL)")
