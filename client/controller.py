@@ -15,12 +15,15 @@ class Controller():
 
     def __init__(self):
         self.socket = None
-        self.userNick = ''
+        # self.userNick = ''
         self.end = False
         self.interlocutorId = ""
         self.app = None
         self.model = Model()
         self.logged = False
+
+    # def getUserNick(self):
+    #     return self.userNick
 
     def isLogged(self):
         return self.logged
@@ -77,8 +80,10 @@ class Controller():
             elif message.startswith(protocolFromServer["newUser"]):
                 user = message[(len(protocolFromServer["newUser"]) + 1):]
                 self.app.addOnlineUser(user)
+            elif message.startswith(protocolFromServer["userLeft"]):
+                user = message[(len(protocolFromServer["userLeft"]) + 1):]
+                self.app.removeOnlineUser(user)
             else:
-
                 self.app.displayMessage(message, -1)
 
             if self.end:
@@ -106,8 +111,8 @@ class Controller():
     def sendMessage(self, msg):
 
         if self.isLogged() and self.interlocutorId != "":
-            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
             self.model.addUserChatHistory(self.interlocutorId, 0, msg)
+            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
         self.socket.send(bytes(msg, "utf-8"))
     def authorise(self):
 
@@ -145,13 +150,14 @@ class Controller():
                 self.setLogged(True)
                 self.model.setClientUserName(response[1])
                 self.app.addMultipleOnlineUsers(response[2])
-                self.app.displayMessage(
-                    "Witaj, " + response[1] +
-                    " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
-                                                                                                        "żeby poprosić o rozpoczęcie rozmowy.\n"
-                                                                                                        "Aby rozłączyć się z tym użytkownikiem napisz '" +
-                    protocolFromClient["disconnect"] + "'.", -1)
-                self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
+                # self.app.displayMessage(
+                #     "Witaj, " + response[1] +
+                #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
+                #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
+                #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
+                #     protocolFromClient["disconnect"] + "'.", -1)
+                # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
+                self.app.displayMessage("Zalogowano.", -1)
                 return data
             elif status == protocolFromServer["usernameTaken"]:
                 self.app.displayMessage("Istnieje już użytkownik o podanej nazwie", -1)
@@ -175,8 +181,8 @@ class Controller():
 
         # self.app.displayMessage the welcoming message
 
-        self.app.displayMessage("Proszę się zalogować wpisując '" + protocolFromClient["login"] + " <nick> <hasło>'\n"
-              "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <nick> <hasło>'", -1)
+        self.app.displayMessage("Proszę się zalogować wpisując '" + protocolFromClient["login"] + " <mail> <hasło>'\n"
+              "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <mail> <nazwa_uzytkownika> <haslo>'", -1)
 
         # log in/register
 
@@ -188,8 +194,10 @@ class Controller():
             return 0
 
         # self.app.displayMessage(userdata)
-        self.userNick = userdata[0]
-        self.app.displayMessage("Twój nick: " + self.userNick, -1)
+        # self.userNick = userdata[0]
+        # self.app.displayMessage("Twój nick: " + self.userNick, -1)
+        self.app.displayLoggedUserName(self.model.getClientUserName())
+
         # _thread.start_new_thread(self.send, ())
         _thread.start_new_thread(self.listen, ())
 

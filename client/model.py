@@ -33,9 +33,6 @@ protocolFromClient = {
     "sendKey:": "SEND_KEY",
 }
 
-# TODO: jak się wysyła od siebie to się w historii czy w ogóle gdzieś zapisuje "SEND <user> <treść>" zamiast "<treść>" (w swojej historii źle zapisuję, u ziomka jest git)
-# nie mam pojęcia gdzie to naprawić, trza poszukać
-# elo benc
 
 class Model():
 
@@ -43,12 +40,24 @@ class Model():
         self.app = None
         self.usersChatHistory = {}
         self.clientUserName = ''
+        self.onlineUsersList = []
+
+    def addOnlineUser(self, userName):
+        self.onlineUsersList.append(userName)
+
+    def removeOnlineUser(self, userName):
+        idx = self.onlineUsersList.index(userName)
+        del self.onlineUsersList[idx]
+        return idx
 
     def setApp(self, app):
         self.app = app
 
     def setClientUserName(self, name):
         self.clientUserName = name
+
+    def getClientUserName(self):
+        return self.clientUserName
 
     def addUserChatHistory(self, userName, whoSent, message):      # whoSent: 0 - clientUser wysłał, 1 - User wysłał
         if not userName in self.usersChatHistory:
