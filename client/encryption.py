@@ -17,12 +17,19 @@ def create_keys():
 def get_public_key(private_key):
     return private_key.public_key()
 
+def get_public_key_pem(public_key):
+    pem = public_key.public_bytes(
+        encoding = serialization.Encoding.PEM,
+        format = serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    return pem
+
 # save the private key on disk
 def save_key(private_key, filename):
     pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption()
+        encoding = serialization.Encoding.PEM,
+        format = serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm = serialization.NoEncryption()
     )
     with open(filename, "wb") as pem_out:
         pem_out.write(pem)
@@ -66,10 +73,11 @@ def decrypt(ciphertext, private_key):
 #message = b"this is a very secret message"
 #ciphertext = encrypt(message, pubk)
 #
-#out = "pk.pem"
+#out = "private_key.pem"
 #save_key(pk, out)
 #
 #nk = load_key(out)
 #plaintext = decrypt(ciphertext, nk)
 #assert(message == plaintext)
-
+#
+#public_key = get_public_key_pem(pk.public_key())

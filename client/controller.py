@@ -114,6 +114,7 @@ class Controller():
             self.model.addUserChatHistory(self.interlocutorId, 0, msg)
             msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
         self.socket.send(bytes(msg, "utf-8"))
+
     def authorise(self):
 
         # send requests to server until logged in or exits
@@ -145,6 +146,9 @@ class Controller():
             if status == protocolFromServer["registerSuccess"]:  # successful register
                 # TODO: dodać tu coś (jakiś feedback w gui że się udało zarejestrować)
                 private_key = create_keys()
+                save_key(private_key, KEY_FILEPATH)
+                public_key_pem = get_public_key_pem(private_key)
+                
 
             elif status == protocolFromServer["welcome"]:  # successful login
                 self.setLogged(True)
