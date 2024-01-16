@@ -114,11 +114,12 @@ class Controller():
         while not self.end:
             time.sleep(0.1)
 
-            if command:
+            if self.current_command:
 
                 # read the request and authorisation data and send it to server
 
-                req = command.split()
+                req = self.current_command.split()
+                self.current_command = None
                 action = req[0]
                 data = req[1:]
 
@@ -181,12 +182,6 @@ class Controller():
                             self.app.displayMessage("Proszę wpisać to samo hasło w potwierdzeniu", 0)
                     else:
                         self.app.displayMessage("Proszę podać <email> <nazwę_użytkownika> <hasło> <potwierdzenie_hasła>", 0)
-            elif status == protocolFromServer["emailTaken"]:
-                self.app.displayMessage("Istnieje już użytkownik o podanej nazwie", -1)
-            elif status == protocolFromServer["userNotFound"]:
-                self.app.displayMessage("Nieprawidłowa nazwa użytkonika lub hasło", -1)
-            else:
-                raise self.ProtocolException("Nieprawidłowa odpowiedź")
 
     def controllerStart(self):
 
