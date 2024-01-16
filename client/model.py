@@ -17,7 +17,8 @@ protocolFromServer = {
     "userLeft": "USER_LEFT",                        # serwer
     "alreadyLoggedIn": "ALREADY_LOGGED_IN",
     "userNotFound": "USER_NOT_FOUND",
-    "usernameTaken": "USERNAME_TAKEN",
+    "emailTaken": "EMAIL_TAKEN",
+    "emailValid": "EMAIL_VALID",
     "registerSuccess": "REGISTER_SUCCESS",
 }
 
@@ -31,6 +32,7 @@ protocolFromClient = {
     "login": "LOGIN",
     "register": "REGISTER",
     "sendKey:": "SEND_KEY",
+    "getSalt": "GET_SALT",
 }
 
 

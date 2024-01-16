@@ -33,6 +33,7 @@ class App(QWidget):
         # Create an instance of the signal emitter
         self.displayMessageSignalEmitter = DisplayMessageSignalEmitter()
         self.displayLoggedUserNameSignalEmitter = DisplayLoggedUserNameSignalEmitter()
+        # Start the controller's communication thread
         _thread.start_new_thread(self.controller.controllerStart, ())
 
     def initUI(self):
@@ -79,7 +80,7 @@ class App(QWidget):
     def onlineUsersListWidgetClicked(self, qmodelindex):
         item = self.onlineUsersListWidget.currentItem()
         self.currentlyOpenedChat = item.text()
-        self.controller.setInterlocutorId(item.text())
+        self.controller.interlocutorId = item.text()
         self.displayMessageHistory()
 
     def addMultipleOnlineUsers(self, onlineUsers):
@@ -111,7 +112,7 @@ class App(QWidget):
     def sendButtonClicked(self):
         textEditorValue = self.textEditor.text()
         self.textEditor.setText("")
-        self.controller.sendMessage(textEditorValue)
+        self.controller.current_command = textEditorValue
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Return:
@@ -131,10 +132,10 @@ if __name__ == '__main__':
 
     def displayMessageSlot(msg, userName):
         if userName == "-1":
-            ex.chatBox.insertPlainText("\ninfo od serwera:\n\t")
+            ex.chatBox.insertPlainText("info od serwera:\n")
 
         if userName == ex.currentlyOpenedChat or userName == "-1" or userName == "0":
-            ex.chatBox.insertPlainText("\n" + msg)
+            ex.chatBox.insertPlainText(msg + "\n")
 
 
     def displayLoggedUserNameSlot(userName):

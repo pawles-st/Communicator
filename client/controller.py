@@ -9,9 +9,8 @@ class Controller():
     class ProtocolException(Exception):
         pass
 
-
-    SOCKET_RECEIVE_SIZE = 1024
-    KEY_FILEPATH = "private_key.pem"
+    __SOCKET_RECEIVE_SIZE = 1024
+    __KEY_FILEPATH = "private_key.pem"
 
     def __init__(self):
         self.socket = None
@@ -20,19 +19,12 @@ class Controller():
         self.interlocutorId = ""
         self.app = None
         self.model = Model()
-        self.logged = False
+        self.is_logged = False
+        self.private_key = None
+        self.current_command = None
 
     # def getUserNick(self):
     #     return self.userNick
-
-    def isLogged(self):
-        return self.logged
-
-    def setLogged(self, val):
-        self.logged = val
-
-    def setInterlocutorId(self, id):
-        self.interlocutorId = id
 
     def endController(self):
         self.end = True
@@ -43,9 +35,9 @@ class Controller():
         self.model.setApp(app)
 
     def listen(self):
-        while True:
+        while not self.end:
             time.sleep(0.1)
-            data = self.socket.recv(self.SOCKET_RECEIVE_SIZE)
+            data = self.socket.recv(self.__SOCKET_RECEIVE_SIZE)
 
             message = str(data.decode('utf-8'))
 
@@ -108,62 +100,88 @@ class Controller():
     #     self.app.displayMessage("send wyszedł z while")
 
 
-    def sendMessage(self, msg):
-
-        if self.isLogged() and self.interlocutorId != "":
-            self.model.addUserChatHistory(self.interlocutorId, 0, msg)
-            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
-        self.socket.send(bytes(msg, "utf-8"))
-
+#    def sendMessage(self, msg):
+#
+#        if self.logged and self.interlocutorId != "":
+#            self.model.addUserChatHistory(self.interlocutorId, 0, msg)
+#            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
+#        self.socket.send(bytes(msg, "utf-8"))
+            
     def authorise(self):
 
         # send requests to server until logged in or exits
 
-        while True:
+        while not self.end:
+            time.sleep(0.1)
 
-            # read the request and authorisation data and send it to server
+            if command:
 
-            # message = input()
-            #req = message.split(" ")
-            #if req[0] == protocolFromClient["login"]:
-            #    bcrypt
+                # read the request and authorisation data and send it to server
 
-            # self.socket.send(bytes(message, "utf-8"))
-            # self.app.displayMessage("message: ", message)
-            # read server response
+                req = command.split()
+                action = req[0]
+                data = req[1:]
 
-            response = self.socket.recv(self.SOCKET_RECEIVE_SIZE)
-            response = response.decode("utf-8").split(" ", 2)
-            status = response[0]
-            data = response[1:]
+                # match the request against the protocol
 
-            # print(response)
+                if action == protocolFromClient["login"]:
+                    if self.private_key is None: # can't login without the private key
+                        self.app.displayMessage("Nie udało się odnaleźć pliku z kluczem prywatnym", 0)
+                    else:
+                        salt_request = protocolFromClient["getSalt"] + data[0]
+                elif action == protocolFromClient["register"]:
+                    if len(data) == 4:
+                        email = data[0]
+                        login = data[1]
+                        password = data[2]
+                        password_confirm = data[3]
 
-            # if registration is successful, create RSA keys and send them to server
-            # if login is successful, return login data
-            # otherwise, self.app.displayMessage the corresponding error message
+                        # confirm the password
 
-            if status == protocolFromServer["registerSuccess"]:  # successful register
-                # TODO: dodać tu coś (jakiś feedback w gui że się udało zarejestrować)
-                private_key = create_keys()
-                save_key(private_key, KEY_FILEPATH)
-                public_key_pem = get_public_key_pem(private_key)
-                
+                        if password == password_confirm:
 
-            elif status == protocolFromServer["welcome"]:  # successful login
-                self.setLogged(True)
-                self.model.setClientUserName(response[1])
-                self.app.addMultipleOnlineUsers(response[2])
-                # self.app.displayMessage(
-                #     "Witaj, " + response[1] +
-                #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
-                #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
-                #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
-                #     protocolFromClient["disconnect"] + "'.", -1)
-                # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
-                self.app.displayMessage("Zalogowano.", -1)
-                return data
-            elif status == protocolFromServer["usernameTaken"]:
+                            # check email availability
+
+                            self.socket.send(bytes(email, "utf-8"))
+                            res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                            if res.startswith(protocolFromServer["emailValid"]):
+
+                                # hash the password with the received salt
+
+                                salt = res.split(" ", 1)[1]
+                                pass_bytes = password.encode("utf-8")
+                                pass_hash = bcrypt.hashpw(pass_bytes, salt)
+                                self.socket.send(bytes((login, pass_hash), "utf-8"))
+
+                                # create the private key and save it
+
+                                self.private_key = create_keys()
+                                save_key(self.private_key, Controller.__KEY_FILEPATH)
+
+                                # send the public key to the server
+
+                                public_key = get_public_key(self.private_key)
+                                public_key_pem = public_key.public_bytes(
+                                        encoding=serialization.Encoding.PEM,
+                                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                                )
+                                self.socket.send(public_key_pem)
+
+                                # TODO: public key verification?
+
+                                # return userdata
+
+                                userdata = (email, login)
+                                return userdata
+
+                            elif res.startswith(protocolFromServer["emailTaken"]):
+                                self.app.displayMessage("Email jest już zajęty")
+
+                        else:
+                            self.app.displayMessage("Proszę wpisać to samo hasło w potwierdzeniu", 0)
+                    else:
+                        self.app.displayMessage("Proszę podać <email> <nazwę_użytkownika> <hasło> <potwierdzenie_hasła>", 0)
+            elif status == protocolFromServer["emailTaken"]:
                 self.app.displayMessage("Istnieje już użytkownik o podanej nazwie", -1)
             elif status == protocolFromServer["userNotFound"]:
                 self.app.displayMessage("Nieprawidłowa nazwa użytkonika lub hasło", -1)
@@ -171,48 +189,60 @@ class Controller():
                 raise self.ProtocolException("Nieprawidłowa odpowiedź")
 
     def controllerStart(self):
+
+        # read the private key from file
+
+        try:
+            self.private_key = load_key(Controller.__KEY_FILEPATH)
+        except FileNotFoundError:
+            # there is no private key yet; the user won't be able to make any LOGIN requests
+            self.app.displayMessage("Nie znaleziono klucza prywatnego. Jeśli nie posiadasz jeszcze konta, zignoruj tę wiadomość. W przeciwnym wypadku proszę umieścić klucz prywatny w folderze z aplikacją\n", 0)
+        except ValueError:
+            self.app.displayMessage("Nie udało się wczytać klucza prywatnego: plik mógł zostać uszkodzony.\n", 0)
+
         # connect to the server
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            host = '192.168.100.7'
-            # host = '127.0.1.1'
+            # host = '192.168.100.7'
+            host = '127.0.1.1'
             port = 50005
             self.socket.connect((host, port))
         except ConnectionRefusedError as err:
-            self.app.displayMessage("Nie udało się połączyć z serwerem: " + str(err), -1)
+            self.app.displayMessage("Nie udało się połączyć z serwerem: " + str(err), 0)
             return 1
 
-        # self.app.displayMessage the welcoming message
+        # display the welcoming message
 
         self.app.displayMessage("Proszę się zalogować wpisując '" + protocolFromClient["login"] + " <mail> <hasło>'\n"
-              "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <mail> <nazwa_uzytkownika> <haslo>'", -1)
+              "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <mail> <nazwa_użytkownika> <hasło> <potwierdzenie_hasła>'", -1)
 
         # log in/register
 
-        try:
-            userdata = self.authorise()
-        except (EOFError, KeyboardInterrupt):
-            self.socket.close()
-            self.app.displayMessage("Żegnaj", -1)
-            return 0
+        userdata = self.authorise()
 
-        # self.app.displayMessage(userdata)
-        # self.userNick = userdata[0]
-        # self.app.displayMessage("Twój nick: " + self.userNick, -1)
+        # setup the app after successful login/registration
+        
+        res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+        if res.startswith(protocolFromServer["welcome"]):
+            self.is_logged = True
+            self.model.setClientUserName(response[1])
+            self.app.addMultipleOnlineUsers(response[2])
+            # self.app.displayMessage(
+            #     "Witaj, " + response[1] +
+            #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
+            #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
+            #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
+            #     protocolFromClient["disconnect"] + "'.", -1)
+            # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
+            self.app.displayMessage("Zalogowano.", -1)
+            return data
+        else:
+            raise self.ProtocolException("Nieprawidłowa odpowiedź")
+
         self.app.displayLoggedUserName(self.model.getClientUserName())
 
-        # _thread.start_new_thread(self.send, ())
+        _thread.start_new_thread(self.send, ())
         _thread.start_new_thread(self.listen, ())
 
-        while True:
-            time.sleep(0.1)
-            if self.end:
-                break
-
-        self.socket.close()
         return 0
-
-if __name__ == '__main__':
-    controller = Controller()
-    controller.controllerStart()

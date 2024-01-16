@@ -1,4 +1,4 @@
-from server.utils import protocol
+from utils import protocol
 blocklist = {} # prawdopodobnie useless, nie wiem czemu to dodalem TODO: usunac
 
 
