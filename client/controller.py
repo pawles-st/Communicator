@@ -13,11 +13,13 @@ class Controller():
         self.socket = None
         self.end = False
         self.interlocutorId = ""
+        self.interlocutorKey = None
         self.app = None
         self.model = Model()
         self.is_logged = False
         self.private_key = None
         self.current_command = None
+        self.current_message = None
 
     def endController(self):
         self.end = True
@@ -33,9 +35,18 @@ class Controller():
             data = self.socket.recv(self.__SOCKET_RECEIVE_SIZE)
 
             message = str(data.decode('utf-8'))
-            words = message.split()
+            
+            if message.startswith(protocolFromServer["receivedKey"]):
 
-            elif message.startswith(protocolFromServer["receivedMessage"]):
+                # save public key of current interlocutor
+
+                words = message.split()
+                public_key_pem = words[1]
+                self.interlocutorKey = load_pem_public_key(public_key_pem)
+
+                self.current_command = protocolFromServer["send"] + " " + self.current_message
+
+            if message.startswith(protocolFromServer["receivedMessage"]):
 
                 # read the user and message cipher
 
@@ -61,23 +72,44 @@ class Controller():
             else:
                 self.app.displayMessage(message, -1)
 
+    def send(self):
+         while not self.end:
+            time.sleep(0.1)
+            # message = protocol["send"] + ' ' + input()            # TODO: naprawić, żeby wysyłało SEND tylko gdy nie zaczyna się od słowa kluczowego protkołu
 
+            if self.current_command:
+                command = self.current_command
+                if command == protocolFromClient["exit"]:
+                    self.end = True
+                elif command.startswith(protocolFromClient["send"]) and self.interlocutorId != "":
 
-    # def send(self):
-    #     # global self.userNick
-    #     while True:
-    #         time.sleep(0.1)
-    #         # message = protocol["send"] + ' ' + input()            # TODO: naprawić, żeby wysyłało SEND tylko gdy nie zaczyna się od słowa kluczowego protkołu
-    #         message = input()
-    #
-    #         if message == protocolFromClient["exit"]:
-    #             self.end = True
-    #             break
-    #         # elif message.startswith(protocolFromClient["login"]):
-    #         #     words = message.split()
-    #         #     self.userNick = words[1]
-    #         self.socket.send(bytes(message, "utf-8"))
-    #     self.app.displayMessage("send wyszedł z while")
+                    if self.interlocutorKey == None:
+                    
+                        # ask for the interlocutor's public key
+
+                        req = protocolFromClient["getKey"] + " " + self.interlocutorId
+                        self.socket.send(bytes(req))
+
+                    else:
+
+                        # add the message to the chat history
+
+                        self.model.addUserChatHistory(self.interlocutorId, 0, msg)
+                        message = self.current_command.split(" ", 1)[1]
+
+                        self.current_command = protocolFromClient["send"]
+
+                        # send the message encrypted with the receiver's key
+
+                        encrypted_message = encrypt(message, public_key)
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrpyted_message
+                        self.socket.send(bytes(req, "utf-8"))
+                        
+                        # send the message encrypted with the sender's key
+
+                        encrypted_message = encrypt(message, get_public_key(self.private_key))
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrpyted_message
+                        self.socket.send(bytes(req, "utf-8"))
 
 
 #    def sendMessage(self, msg):
@@ -126,7 +158,7 @@ class Controller():
                                 # hash the password with the salt and send to the server
 
                                 salt = res.split(" ", 1)[1]
-                                pass_bytes = password_encode("utf-8")
+                                pass_bytes = password.encode("utf-8")
                                 pass_hash = bcrypt.hashpw(pass_bytes, salt)
                                 login_data = protocolFromClient["loginData"] + pass_hash
                                 self.socket.send(bytes(login_data, "utf-8"))

@@ -21,6 +21,7 @@ protocolFromServer = {
     "emailValid": "EMAIL_VALID",
     "registerSuccess": "REGISTER_SUCCESS",
     "receivedSalt": "RECEIVED_SALT",
+    "receivedKey": "RECEIVED_KEY",
 }
 
 protocolFromClient = {
@@ -33,6 +34,7 @@ protocolFromClient = {
     "login": "LOGIN",
     "register": "REGISTER",
     "sendKey:": "SEND_KEY",
+    "getKey": "GET_KEY",
     "getSalt": "GET_SALT",
     "checkAvailability": "CHECK_AVAILABILITY",
     "registerData": "REGISTER_DATA",
