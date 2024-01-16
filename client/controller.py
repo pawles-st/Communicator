@@ -33,41 +33,31 @@ class Controller():
             data = self.socket.recv(self.__SOCKET_RECEIVE_SIZE)
 
             message = str(data.decode('utf-8'))
+            words = message.split()
 
-            if message.startswith(protocolFromServer["req"]):
-                self.interlocutorId = int(message[(len(protocolFromServer["req"]) + 1):])
-                self.app.displayMessage("Użytkownik o ID " + str(self.interlocutorId) + " chce z Tobą rozmawiać. "
-                        "Napisz '" +  str(protocolFromClient["accept"]) + ' ' + str(self.interlocutorId) + "' żeby zaakceptować połączenie.", -1)
-            elif message.startswith(protocolFromServer["accepted"]):
-                self.interlocutorId = int(message[(len(protocolFromServer["accepted"]) + 1):])
-                # self.app.displayMessage("Użytkownik o ID", interlocutorId, "zaakceptował połączenie. "
-                #         "Możecie teraz ze sobą rozmawiać.")
-                self.app.displayMessage("Połączenie z użytkownikiem o ID " + str(self.interlocutorId) + " zostało nawiązane. "
-                        "Możecie teraz ze sobą rozmawiać.", -1)
-            # elif message.startswith(protocolFromServer["welcome"]):
-            #     words = message.split(' ', 3)
-            #     # self.app.displayMessage(words)
-            #     self.app.displayMessage(
-            #         "Witaj,", words[2], "wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
-            #         "żeby poprosić o rozpoczęcie rozmowy.\n"
-            #         "Aby rozłączyć się z tym użytkownikiem napisz '" +
-            #         protocolFromClient["disconnect"] + "'.")
-            #     self.app.displayMessage("Twoje id:", words[1], "\nLista obecnych użytkowników:", words[3])
-            elif message.startswith(protocolFromServer["connectionEstablished"]):
-                self.app.displayMessage("Proszę się zalgować wpisując '" + protocolFromClient["login"] + " <nick> <hasło>'\n"
-                        "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <nick> <hasło>'", -1)
             elif message.startswith(protocolFromServer["receivedMessage"]):
+
+                # read the user and message cipher
+
                 words = message.split(" ", 2)
-                userName = words[1]
-                messageText = words[2]
+                user_name = words[1]
+                message_cipher = words[2]
+
+                # decode the message with the private key
+
+                message_text = decrypt(message_cipher, self.private_key)
+
+                # add the message to the chat history
+
                 self.model.addUserChatHistory(userName, 1, messageText)
-                # self.app.displayMessage(messageText, userName)
+
             elif message.startswith(protocolFromServer["newUser"]):
-                user = message[(len(protocolFromServer["newUser"]) + 1):]
+
+                # add the new user to the list
+
+                words = message.split(" ", 1)
+                user = words[1]
                 self.app.addOnlineUser(user)
-            elif message.startswith(protocolFromServer["userLeft"]):
-                user = message[(len(protocolFromServer["userLeft"]) + 1):]
-                self.app.removeOnlineUser(user)
             else:
                 self.app.displayMessage(message, -1)
 
