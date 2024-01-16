@@ -2,6 +2,8 @@ import socket
 import time
 import _thread
 import bcrypt
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+
 from model import *
 from encryption import *
 
@@ -60,7 +62,7 @@ class Controller():
 
                 # add the message to the chat history
 
-                self.model.addUserChatHistory(userName, 1, messageText)
+                self.model.addUserChatHistory(user_name, 1, message_text)
 
             elif message.startswith(protocolFromServer["newUser"]):
 
@@ -94,21 +96,21 @@ class Controller():
 
                         # add the message to the chat history
 
-                        self.model.addUserChatHistory(self.interlocutorId, 0, msg)
                         message = self.current_command.split(" ", 1)[1]
+                        self.model.addUserChatHistory(self.interlocutorId, 0, message)
 
                         self.current_command = protocolFromClient["send"]
 
                         # send the message encrypted with the receiver's key
 
                         encrypted_message = encrypt(message, public_key)
-                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrpyted_message
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrypted_message
                         self.socket.send(bytes(req, "utf-8"))
 
                         # send the message encrypted with the sender's key
 
                         encrypted_message = encrypt(message, get_public_key(self.private_key))
-                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrpyted_message
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrypted_message
                         self.socket.send(bytes(req, "utf-8"))
 
 
@@ -288,8 +290,8 @@ class Controller():
         print(res)
         if res.startswith(protocolFromServer["welcome"]):
             self.is_logged = True
-            self.model.setClientUserName(response[1])
-            self.app.addMultipleOnlineUsers(response[2])
+            self.model.setClientUserName(res[1])
+            self.app.addMultipleOnlineUsers(res[2])
             # self.app.displayMessage(
             #     "Witaj, " + response[1] +
             #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "

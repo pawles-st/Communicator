@@ -2,10 +2,12 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtSvg import QSvgWidget
+# from PyQt5.QtSvg import *
 import _thread
 
 from controller import *
-
+from latexHandler import tex2svg
 
 class DisplayMessageSignalEmitter(QObject):
     # Define a custom signal with a value
@@ -15,6 +17,20 @@ class DisplayMessageSignalEmitter(QObject):
 class DisplayLoggedUserNameSignalEmitter(QObject):
     custom_signal = pyqtSignal(str)
 
+class SvgWidget(QSvgWidget):
+
+    def __init__(self, *args):
+        QSvgWidget.__init__(self, *args)
+
+    def paintEvent(self, event):
+        renderer = self.renderer()
+        if renderer != None:
+            painter = QPainter(self)
+            size = renderer.defaultSize()
+            ratio = size.height()/size.width()
+            length = min(self.width(), self.height())
+            renderer.render(painter, QRectF(0, 0, length, ratio * length))
+            painter.end()
 
 class App(QWidget):
     def __init__(self):
@@ -75,7 +91,38 @@ class App(QWidget):
 
         # self.controller.getUserNick()
 
+        self.latexTest = SvgWidget()
+        # self.latexTest.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
+        # FORMULA = r'\int_{-\infty}^\infty e^{-x^2}\,dx = \sqrt{\pi}'
+        FORMULA = r'x_k =  \frac{b_k - \sum_{j = k + 1}^{n}a_{kj}x_j}{a_{kk}}'
+        self.latexTest.load(tex2svg(FORMULA))
+        self.layout.addWidget(self.latexTest, 3, 0)
+
+
         self.show()
+
+    # def tex2svg(formula, fontsize=12, dpi=300):
+    #     """Render TeX formula to SVG.
+    #     Args:
+    #         formula (str): TeX formula.
+    #         fontsize (int, optional): Font size.
+    #         dpi (int, optional): DPI.
+    #     Returns:
+    #         str: SVG render.
+    #     """
+    #
+    #     fig = plt.figure(figsize=(0.01, 0.01))
+    #     fig.text(0, 0, r'${}$'.format(formula), fontsize=fontsize)
+    #     # fig.text(0, 0, r'${}$'.format(formula))
+    #
+    #     output = BytesIO()
+    #     fig.savefig(output, dpi=dpi, transparent=True, format='svg',
+    #                 bbox_inches='tight', pad_inches=0.0)
+    #     # fig.savefig(output)
+    #     plt.close(fig)
+    #
+    #     output.seek(0)
+    #     return output.read()
 
     def onlineUsersListWidgetClicked(self, qmodelindex):
         item = self.onlineUsersListWidget.currentItem()
