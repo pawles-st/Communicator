@@ -1,3 +1,4 @@
+import base64
 import socket
 import time
 import _thread
@@ -42,11 +43,11 @@ class Controller():
 
                 # save public key of current interlocutor
 
-                words = message.split()
+                words = message.split(' ', 1)
                 public_key_pem = words[1]
-                self.interlocutorKey = load_pem_public_key(public_key_pem)
+                self.interlocutorKey = load_pem_public_key(bytes(public_key_pem, "utf-8"))
 
-                self.current_command = protocolFromServer["send"] + " " + self.current_message
+                self.current_command = protocolFromClient["send"] + " " + self.current_message
 
             if message.startswith(protocolFromServer["receivedMessage"]):
 
@@ -57,8 +58,12 @@ class Controller():
                 message_cipher = words[2]
 
                 # decode the message with the private key
-
-                message_text = decrypt(message_cipher, self.private_key)
+                # print(message_cipher[2:-1])
+                # message_text = decrypt(message_cipher[2:-1], self.private_key)
+                # print(message_cipher[2:-1])
+                # message_text = decrypt(message_cipher[2:-1], self.private_key)
+                print(message_cipher)
+                message_text = decrypt(base64.b64decode(message_cipher), self.private_key)
 
                 # add the message to the chat history
 
@@ -90,28 +95,36 @@ class Controller():
                         # ask for the interlocutor's public key
 
                         req = protocolFromClient["getKey"] + " " + self.interlocutorId
-                        self.socket.send(bytes(req))
+                        self.socket.send(bytes(req, "utf-8"))
+                        self.current_message = command.split()[1]
+                        self.current_command = None
 
                     else:
 
                         # add the message to the chat history
-
-                        message = self.current_command.split(" ", 1)[1]
+                        print(self.current_command)
+                        print(self.current_message)
+                        # message = self.current_command.split(" ", 1)[1]
+                        message = self.current_message
                         self.model.addUserChatHistory(self.interlocutorId, 0, message)
 
-                        self.current_command = protocolFromClient["send"]
-
+                        # self.current_command = protocolFromClient["send"]
+                        self.current_command = None
                         # send the message encrypted with the receiver's key
 
-                        encrypted_message = encrypt(message, public_key)
-                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrypted_message
+                        encrypted_message = encrypt(message, self.interlocutorKey)
+                        # print(decrypt(encrypted_message, self.private_key))
+                        # print(base64.b64encode(encrypted_message).decode("utf-8"))
+                        # req = protocolFromClient["send"] + " " + self.interlocutorId + " " + str(encrypted_message)
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + base64.b64encode(encrypted_message).decode("utf-8")
                         self.socket.send(bytes(req, "utf-8"))
-
                         # send the message encrypted with the sender's key
 
                         encrypted_message = encrypt(message, get_public_key(self.private_key))
-                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrypted_message
-                        self.socket.send(bytes(req, "utf-8"))
+                        # req = protocolFromClient["send"] + " " + self.interlocutorId + " " + base64.b64encode(encrypted_message).decode("utf-8")
+                        # self.socket.send(bytes(req, "utf-8"))
+                        # TODO: odkomentowac powyzsze linijki, miec osobne komendy do send encrypted self.private_key i send encrypted interlocuterKey
+
 
 
 #    def sendMessage(self, msg):
@@ -170,7 +183,7 @@ class Controller():
 
                                 res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
                                 if res.startswith(protocolFromServer["welcome"]):
-
+                                    res = res.split(' ', 2)
                                     # setup the app and finish login
 
                                     self.is_logged = True
@@ -285,24 +298,6 @@ class Controller():
             return 1
 
         # setup the app after successful login/registration
-        
-        res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
-        print(res)
-        if res.startswith(protocolFromServer["welcome"]):
-            self.is_logged = True
-            self.model.setClientUserName(res[1])
-            self.app.addMultipleOnlineUsers(res[2])
-            # self.app.displayMessage(
-            #     "Witaj, " + response[1] +
-            #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
-            #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
-            #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
-            #     protocolFromClient["disconnect"] + "'.", -1)
-            # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
-            self.app.displayMessage("Zalogowano.", -1)
-            return data
-        else:
-            raise self.ProtocolException("Nieprawidłowa odpowiedź")
 
         self.app.displayLoggedUserName(self.model.getClientUserName())
 

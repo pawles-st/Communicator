@@ -1,4 +1,6 @@
-from utils import protocol
+import mysql.connector
+
+from utils import protocol, db_credentials
 from DB_access import get_key, get_user
 
 blocklist = {} # prawdopodobnie useless, nie wiem czemu to dodalem TODO: usunac
@@ -6,6 +8,7 @@ blocklist = {} # prawdopodobnie useless, nie wiem czemu to dodalem TODO: usunac
 
 class MessageHandler():
     def __init__(self):
+        self.cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"], host=db_credentials["host"], database=db_credentials["database"], port=db_credentials["port"])
         pass
     def handle(self, message, id):
         if message.startswith(protocol["fromClient"]["send"]):
@@ -69,8 +72,8 @@ class MessageHandler():
             existing_user = get_user(self.cnx, credentials[1])
             if existing_user:
                 key = get_key(self.cnx, credentials[1])
-                self.cursor.close()
+                # self.cursor.close()
                 return "SEND", -1, "RECEIVED_KEY " + key[0]
             else:
-                self.cursor.close()
+                # self.cursor.close()
                 return "SEND", -1, "USER_NOT_FOUND"

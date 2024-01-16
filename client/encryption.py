@@ -45,8 +45,8 @@ def load_key(filename):
 
 # encrypt a message with a public key
 def encrypt(message, public_key):
-    ciphertext = pubk.encrypt(
-        message,
+    ciphertext = public_key.encrypt(
+        bytes(message, "utf-8"),
         padding.OAEP(
             mgf = padding.MGF1(algorithm = hashes.SHA256()),
             algorithm = hashes.SHA256(),
@@ -57,7 +57,7 @@ def encrypt(message, public_key):
 
 # decrypt a ciphertext with a private key
 def decrypt(ciphertext, private_key):
-    plaintext = nk.decrypt(
+    plaintext = private_key.decrypt(
         ciphertext,
         padding.OAEP(
             mgf = padding.MGF1(algorithm = hashes.SHA256()),
