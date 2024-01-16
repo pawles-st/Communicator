@@ -19,7 +19,7 @@ def get_user(connection, mail):
 
 def get_user_password(connection,mail,password):
 	cursor = connection.cursor()
-	query = "SELECT * FROM user WHERE user_email = %s AND user_password = %s COLLATE SQL_Latin1_General_CP1"
+	query = "SELECT * FROM user WHERE user_email = %s AND BINARY user_password = BINARY %s"
 	cursor.execute(query,(mail,password,))
 	result = cursor.fetchone()
 	return result
