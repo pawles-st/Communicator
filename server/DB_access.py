@@ -1,4 +1,4 @@
-import mysql.connector
+import mariadb.connector
 import datetime
 from utils import db_credentials
 
@@ -19,7 +19,7 @@ def get_user(connection, mail):
 
 def get_user_password(connection,mail,password):
 	cursor = connection.cursor()
-	query = "SELECT * FROM user WHERE user_email = %s AND user_password = %s"
+	query = "SELECT * FROM user WHERE user_email = %s AND user_password = %s COLLATE SQL_Latin1_General_CP1"
 	cursor.execute(query,(mail,password,))
 	result = cursor.fetchone()
 	return result
@@ -79,6 +79,75 @@ def get_key(connection, mail):
 	cursor.execute(query, (mail,))
 	result = cursor.fetchone()
 	return result
+
+def get_message_text_by_id(connection, mess_id):
+	cursor = connection.cursor()
+	query = "SELECT message_text FROM message WHERE message_id = %s"
+	cursor.execute(query(mess_id,))
+	result = cursor.fetchone()
+	return result
+def get_all_messages_from_convo(connection, convo_id):
+	cursor = connection.cursor()
+	query = "SELECT message_text FROM message WHERE conversation_id = %s"
+	cursor.execute(query(convo_id,))
+	result = cursor.fetchall()
+	return result
+
+def get_all_messages_with_senders_from_convo(connection, convo_id):
+	cursor = connection.cursor()
+	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s"
+	cursor.execute(query(convo_id, ))
+	result = cursor.fetchall()
+	return result
+def get_user_conversations(connection, mail):
+	cursor = connection.cursor()
+	query = "SELECT conversation_id FROM conversation_member WHERE user_email = %s"
+	cursor.execute(query(mail, ))
+	result = cursor.fetchall()
+	return result
+
+#Można dorobić queries które zwracają też datę i godzine wysłania
+def get_x_latest_messages_from_convo_by_date(connection, convo_id, x):
+	cursor = connection.cursor()
+	query = "SELECT message_text FROM message WHERE conversation_id = %s ORDER BY datetime_of_sending DESC LIMIT %s"
+	cursor.execute(query(convo_id,x,))
+	result = cursor.fetchall()
+	return result
+
+def get_x_latest_messages_with_senders_from_convo_by_date(connection, convo_id, x):
+	cursor = connection.cursor()
+	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s ORDER BY datetime_of_sending DESC LIMIT %s"
+	cursor.execute(query(convo_id,x,))
+	result = cursor.fetchall()
+	return result
+
+def get_x_latest_messages_from_convo_by_id(connection, convo_id, x):
+	cursor = connection.cursor()
+	query = "SELECT message_text FROM message WHERE conversation_id = %s ORDER BY message_id DESC LIMIT %s"
+	cursor.execute(query(convo_id,x))
+	result = cursor.fetchall()
+	return result
+
+def get_x_latest_messages_with_senders_from_convo_by_id(connection, convo_id, x):
+	cursor = connection.cursor()
+	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s ORDER BY message_id DESC LIMIT %s"
+	cursor.execute(query(convo_id,x))
+	result = cursor.fetchall()
+	return result
+
+def get_x_messages_with_senders_with_id_less_than(connection, convo_id, earlier_than_id, no_of_messages):
+	cursor = connection.cursor()
+	query = "SELECT sender_email,message_text FROM message WHERE conversation_id = %s AND message_id < %s ORDER BY message_id DESC LIMIT %s"
+	cursor.execute(query(convo_id,earlier_than_id,no_of_messages))
+	result = cursor.fetchall()
+	return result
+def get_messages_sent_after_x(connection, convo_id, date):
+	cursor = connection.cursor()
+	query = "SELECT sender_email,message_text FROM message WHERE conversation_id = %s AND datetime_of_sending > %s ORDER BY datetime_of_sending DESC"
+	cursor.execute(query(convo_id,date,))
+	result = cursor.fetchall()
+	return result
+
 cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
 								   host=db_credentials["host"], database=db_credentials["database"],
 								   port=db_credentials["port"])
