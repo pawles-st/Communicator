@@ -20,8 +20,7 @@ protocolFromServer = {
     "emailTaken": "EMAIL_TAKEN",
     "emailValid": "EMAIL_VALID",
     "registerSuccess": "REGISTER_SUCCESS",
-    "receivedSalt": "RECEIVED_SALT",
-    "receivedKey": "RECEIVED_KEY",
+    "receivedSalt": "SALT",
 }
 
 protocolFromClient = {

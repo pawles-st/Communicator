@@ -35,7 +35,7 @@ class Controller():
             data = self.socket.recv(self.__SOCKET_RECEIVE_SIZE)
 
             message = str(data.decode('utf-8'))
-            
+
             if message.startswith(protocolFromServer["receivedKey"]):
 
                 # save public key of current interlocutor
@@ -84,7 +84,7 @@ class Controller():
                 elif command.startswith(protocolFromClient["send"]) and self.interlocutorId != "":
 
                     if self.interlocutorKey == None:
-                    
+
                         # ask for the interlocutor's public key
 
                         req = protocolFromClient["getKey"] + " " + self.interlocutorId
@@ -104,7 +104,7 @@ class Controller():
                         encrypted_message = encrypt(message, public_key)
                         req = protocolFromClient["send"] + " " + self.interlocutorId + " " + encrpyted_message
                         self.socket.send(bytes(req, "utf-8"))
-                        
+
                         # send the message encrypted with the sender's key
 
                         encrypted_message = encrypt(message, get_public_key(self.private_key))
@@ -158,9 +158,10 @@ class Controller():
                                 # hash the password with the salt and send to the server
 
                                 salt = res.split(" ", 1)[1]
+                                salt = bytes(salt, "utf-8")
                                 pass_bytes = password.encode("utf-8")
                                 pass_hash = bcrypt.hashpw(pass_bytes, salt)
-                                login_data = protocolFromClient["loginData"] + pass_hash
+                                login_data = protocolFromClient["loginData"] + " " + pass_hash.decode("utf-8")
                                 self.socket.send(bytes(login_data, "utf-8"))
 
                                 # verify the password
@@ -179,6 +180,7 @@ class Controller():
                                 elif res.startswith(protocolFromServer["userNotFound"]):
                                     self.app.displayMessage("Nieprawidłowy email lub hasło", 0)
                                 else:
+                                    print(res)
                                     raise ProtocolException("Nieprawidłowa odpowiedź")
                             elif res.startswith(protocolFromServer["userNotFound"]):
                                 self.app.displayMessage("Nieprawidłowy email lub hasło", 0)

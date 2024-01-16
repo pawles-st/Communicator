@@ -13,7 +13,6 @@ def get_all_users(connection):
 def get_user(connection, mail):
 	cursor = connection.cursor()
 	query = "SELECT * FROM user WHERE user_email = %s" # TODO: sql ignoruje case-sensitivity (np. email = h ale znajduje dla email = H)
-	print(mail)
 	cursor.execute(query,(mail,))
 	result = cursor.fetchone()
 	return result
@@ -26,7 +25,6 @@ def get_user_password(connection,mail,password):
 	return result
 
 def create_user(connection, id, name, password, date, mail, key, salt):
-	print("Createign ugser")
 	cursor = connection.cursor()
 
 	sql = "INSERT INTO user (user_name, user_password, date_of_join, user_email, user_pk, salt) VALUES (%s,%s,%s,%s,%s,%s)"
@@ -34,7 +32,6 @@ def create_user(connection, id, name, password, date, mail, key, salt):
 	user_data = (name,password,date,mail,key,salt)
 
 	cursor.execute(sql, user_data)
-	print("executer")
 	connection.commit()
 	cursor.close()
 
@@ -69,7 +66,19 @@ def create_message(connection, message_id, sender_email, text, date_of_send, con
 	connection.commit()
 	cursor.close()
 
+def get_salt(connection, mail):
+	cursor = connection.cursor()
+	query = "SELECT salt FROM user WHERE user_email = %s"
+	cursor.execute(query,(mail,))
+	result = cursor.fetchone()
+	return result
 
+def get_key(connection, mail):
+	cursor = connection.cursor()
+	query = "SELECT user_pk FROM user WHERE user_email = %s"
+	cursor.execute(query, (mail,))
+	result = cursor.fetchone()
+	return result
 cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
 								   host=db_credentials["host"], database=db_credentials["database"],
 								   port=db_credentials["port"])

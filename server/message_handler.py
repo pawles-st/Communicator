@@ -1,4 +1,6 @@
 from utils import protocol
+from DB_access import get_key, get_user
+
 blocklist = {} # prawdopodobnie useless, nie wiem czemu to dodalem TODO: usunac
 
 
@@ -14,8 +16,8 @@ class MessageHandler():
             return self.on_unblock(message, id)
         elif message.startswith(protocol["fromClient"]["getUsers"]):
             return self.on_getusers()
-        elif message.startswith(protocol["fromClient"]["sendKey"]):
-            return self.on_sendkey()
+        elif message.startswith("GET_KEY"):
+            return self.on_get_key(message)
         else:
             return "SEND", -1, "BAD_REQUEST"
 
@@ -59,5 +61,16 @@ class MessageHandler():
     def on_getusers(self):
         return "GET_ONLINE", -1, None
 
-    def on_sendkey(self, ):
-        return "TODO"
+    def on_get_key(self, msg):
+        credentials = msg.split(' ')
+        if len(credentials) != 2:
+            return "SEND", -1, "ERROR"
+        else:
+            existing_user = get_user(self.cnx, credentials[1])
+            if existing_user:
+                key = get_key(self.cnx, credentials[1])
+                self.cursor.close()
+                return "SEND", -1, "RECEIVED_KEY " + key[0]
+            else:
+                self.cursor.close()
+                return "SEND", -1, "USER_NOT_FOUND"
