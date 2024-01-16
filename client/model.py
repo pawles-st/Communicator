@@ -34,6 +34,9 @@ protocolFromClient = {
     "register": "REGISTER",
     "sendKey:": "SEND_KEY",
     "getSalt": "GET_SALT",
+    "checkAvailability": "CHECK_AVAILABILITY",
+    "registerData": "REGISTER_DATA",
+    "loginData": "LOGIN_DATA",
 }
 
 

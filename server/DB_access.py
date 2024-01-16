@@ -12,7 +12,8 @@ def get_all_users(connection):
 
 def get_user(connection, mail):
 	cursor = connection.cursor()
-	query = "SELECT * FROM user WHERE user_email = %s"
+	query = "SELECT * FROM user WHERE user_email = %s" # TODO: sql ignoruje case-sensitivity (np. email = h ale znajduje dla email = H)
+	print(mail)
 	cursor.execute(query,(mail,))
 	result = cursor.fetchone()
 	return result
@@ -24,14 +25,16 @@ def get_user_password(connection,mail,password):
 	result = cursor.fetchone()
 	return result
 
-def create_user(connection, id, name, password, date, mail, key):
+def create_user(connection, id, name, password, date, mail, key, salt):
+	print("Createign ugser")
 	cursor = connection.cursor()
 
-	sql = "INSERT INTO user (user_name, user_password, date_of_join, user_email, user_pk) VALUES (%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO user (user_name, user_password, date_of_join, user_email, user_pk, salt) VALUES (%s,%s,%s,%s,%s,%s)"
 
-	user_data = (name,password,date,mail,key)
+	user_data = (name,password,date,mail,key,salt)
 
 	cursor.execute(sql, user_data)
+	print("executer")
 	connection.commit()
 	cursor.close()
 

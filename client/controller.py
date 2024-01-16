@@ -125,7 +125,7 @@ class Controller():
 
                             # ask for the salt corresponding to the given mail
 
-                            req = protocolFromClient["getSalt"] + email
+                            req = protocolFromClient["getSalt"] + " " + email
                             self.socket.send(bytes(req, "utf-8"))
 
                             # receive salt from server
@@ -177,16 +177,17 @@ class Controller():
 
                             # check email availability
 
-                            self.socket.send(bytes(email, "utf-8"))
+                            self.socket.send(bytes(protocolFromClient["checkAvailability"] + " " + email, "utf-8"))
                             res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
                             if res.startswith(protocolFromServer["emailValid"]):
 
                                 # hash the password with the received salt
 
                                 salt = res.split(" ", 1)[1]
+                                salt = bytes(salt, "utf-8")
                                 pass_bytes = password.encode("utf-8")
                                 pass_hash = bcrypt.hashpw(pass_bytes, salt)
-                                self.socket.send(bytes((login, pass_hash), "utf-8"))
+                                # self.socket.send(bytes((login, pass_hash), "utf-8"))
 
                                 # create the private key and save it
 
@@ -200,7 +201,10 @@ class Controller():
                                         encoding=serialization.Encoding.PEM,
                                         format=serialization.PublicFormat.SubjectPublicKeyInfo
                                 )
-                                self.socket.send(public_key_pem)
+
+                                #self.socket.send(public_key_pem)
+                                self.socket.send(bytes(protocolFromClient["registerData"] + " " + login + " " + pass_hash.decode("utf-8") + " " + public_key_pem.decode("utf-8"), "utf-8"))
+                                # self.socket.send(bytes("REGISTER_DATA " + login + " " + pass_hash + " " + public_key_pem, "utf-8"))
 
                                 # TODO: public key verification?
 
@@ -234,8 +238,8 @@ class Controller():
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            # host = '192.168.100.7'
-            host = '127.0.1.1'
+            host = '192.168.100.7'
+            # host = '127.0.1.1'
             port = 50005
             self.socket.connect((host, port))
         except ConnectionRefusedError as err:
@@ -256,6 +260,23 @@ class Controller():
 
         # setup the app after successful login/registration
         
+        res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+        print(res)
+        if res.startswith(protocolFromServer["welcome"]):
+            self.is_logged = True
+            self.model.setClientUserName(response[1])
+            self.app.addMultipleOnlineUsers(response[2])
+            # self.app.displayMessage(
+            #     "Witaj, " + response[1] +
+            #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
+            #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
+            #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
+            #     protocolFromClient["disconnect"] + "'.", -1)
+            # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
+            self.app.displayMessage("Zalogowano.", -1)
+            return data
+        else:
+            raise self.ProtocolException("Nieprawidłowa odpowiedź")
 
         self.app.displayLoggedUserName(self.model.getClientUserName())
 

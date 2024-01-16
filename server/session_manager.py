@@ -47,7 +47,8 @@ def on_new_client(clientsocket, addr, id):
                 elif result[0] == "GET_ONLINE":
                     clientsocket.send(bytes(protocol["fromServer"]["usersList"] + ' ' + str(list(clients.keys())), "utf-8"))
 
-    except Exception:
+    except Exception as e:
+        print(e)
         print("uzytkownik", id, addr, "rozlaczyl sie")
         for client in clients:
             if id != -1 and clients[client]["connected"] == -1 and client != id:
