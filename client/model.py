@@ -74,3 +74,8 @@ class Model():
             self.usersChatHistory[userName] = []
         return self.usersChatHistory[userName]
 
+class ProtocolException(Exception):
+    pass
+
+class TerminateException(Exception):
+    pass

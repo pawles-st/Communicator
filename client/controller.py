@@ -6,9 +6,6 @@ from model import *
 from encryption import *
 
 class Controller():
-    class ProtocolException(Exception):
-        pass
-
     __SOCKET_RECEIVE_SIZE = 1024
     __KEY_FILEPATH = "private_key.pem"
 
@@ -176,6 +173,8 @@ class Controller():
                             self.app.displayMessage("Proszę wpisać to samo hasło w potwierdzeniu", 0)
                     else:
                         self.app.displayMessage("Proszę podać <email> <nazwę_użytkownika> <hasło> <potwierdzenie_hasła>", 0)
+        else:
+            raise TerminateException("Nieudany login")
 
     def controllerStart(self):
 
@@ -208,7 +207,10 @@ class Controller():
 
         # log in/register
 
-        userdata = self.authorise()
+        try:
+            userdata = self.authorise()
+        except TerminateException:
+            return 1
 
         # setup the app after successful login/registration
         
