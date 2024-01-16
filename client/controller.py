@@ -119,8 +119,51 @@ class Controller():
                     if self.private_key is None: # can't login without the private key
                         self.app.displayMessage("Nie udało się odnaleźć pliku z kluczem prywatnym", 0)
                     else:
-                        email = data[0]
-                        salt_request = protocolFromClient["getSalt"] + data[0]
+                        if len(data) == 2:
+                            email = data[0]
+                            password = data[1]
+
+                            # ask for the salt corresponding to the given mail
+
+                            req = protocolFromClient["getSalt"] + email
+                            self.socket.send(bytes(req, "utf-8"))
+
+                            # receive salt from server
+
+                            res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                            if res.startswith(protocolFromServer["receivedSalt"]):
+
+                                # hash the password with the salt and send to the server
+
+                                salt = res.split(" ", 1)[1]
+                                pass_bytes = password_encode("utf-8")
+                                pass_hash = bcrypt.hashpw(pass_bytes, salt)
+                                login_data = protocolFromClient["loginData"] + pass_hash
+                                self.socket.send(bytes(login_data, "utf-8"))
+
+                                # verify the password
+
+                                res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                                if res.startswith(protocolFromServer["welcome"]):
+
+                                    # setup the app and finish login
+
+                                    self.is_logged = True
+                                    self.model.setClientUserName(res[1])
+                                    self.app.addMultipleOnlineUsers(res[2])
+                                    self.app.displayMessage("Zalogowano.", -1)
+                                    return
+
+                                elif res.startswith(protocolFromServer["userNotFound"]):
+                                    self.app.displayMessage("Nieprawidłowy email lub hasło", 0)
+                                else:
+                                    raise ProtocolException("Nieprawidłowa odpowiedź")
+                            elif res.startswith(protocolFromServer["userNotFound"]):
+                                self.app.displayMessage("Nieprawidłowy email lub hasło", 0)
+                            else:
+                                raise ProtocolException("Nieprawidłowa odpowiedź")
+                        else:
+                            self.app.displayMessage("Proszę podać <email> <hasło>", 0)
                 elif action == protocolFromClient["register"]:
                     if len(data) == 4:
                         email = data[0]
@@ -161,13 +204,12 @@ class Controller():
 
                                 # TODO: public key verification?
 
-                                # return userdata
-
-                                userdata = (email, login)
-                                return userdata
+                                res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                                if res.startswith(protocolFromServer["registerSuccess"]):
+                                    self.app.displayMessage("Zarejestrowano", -1)
 
                             elif res.startswith(protocolFromServer["emailTaken"]):
-                                self.app.displayMessage("Email jest już zajęty")
+                                self.app.displayMessage("Email jest już zajęty", 0)
 
                         else:
                             self.app.displayMessage("Proszę wpisać to samo hasło w potwierdzeniu", 0)
@@ -214,22 +256,6 @@ class Controller():
 
         # setup the app after successful login/registration
         
-        res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
-        if res.startswith(protocolFromServer["welcome"]):
-            self.is_logged = True
-            self.model.setClientUserName(response[1])
-            self.app.addMultipleOnlineUsers(response[2])
-            # self.app.displayMessage(
-            #     "Witaj, " + response[1] +
-            #     " wybierz któregoś użytkownika z listy wpisując '" + protocolFromClient["connect"] + " <id>' "
-            #                                                                                         "żeby poprosić o rozpoczęcie rozmowy.\n"
-            #                                                                                         "Aby rozłączyć się z tym użytkownikiem napisz '" +
-            #     protocolFromClient["disconnect"] + "'.", -1)
-            # self.app.displayMessage("\nLista obecnych użytkowników: " + response[2], -1)
-            self.app.displayMessage("Zalogowano.", -1)
-            return data
-        else:
-            raise self.ProtocolException("Nieprawidłowa odpowiedź")
 
         self.app.displayLoggedUserName(self.model.getClientUserName())
 
