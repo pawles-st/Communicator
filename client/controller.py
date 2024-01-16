@@ -14,7 +14,6 @@ class Controller():
 
     def __init__(self):
         self.socket = None
-        # self.userNick = ''
         self.end = False
         self.interlocutorId = ""
         self.app = None
@@ -22,9 +21,6 @@ class Controller():
         self.is_logged = False
         self.private_key = None
         self.current_command = None
-
-    # def getUserNick(self):
-    #     return self.userNick
 
     def endController(self):
         self.end = True
@@ -78,9 +74,6 @@ class Controller():
             else:
                 self.app.displayMessage(message, -1)
 
-            if self.end:
-                break
-
 
 
     # def send(self):
@@ -129,6 +122,7 @@ class Controller():
                     if self.private_key is None: # can't login without the private key
                         self.app.displayMessage("Nie udało się odnaleźć pliku z kluczem prywatnym", 0)
                     else:
+                        email = data[0]
                         salt_request = protocolFromClient["getSalt"] + data[0]
                 elif action == protocolFromClient["register"]:
                     if len(data) == 4:

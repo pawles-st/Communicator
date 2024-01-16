@@ -66,18 +66,3 @@ def decrypt(ciphertext, private_key):
         )
     )
     return plaintext
-
-
-#pk = create_keys()
-#pubk = pk.public_key()
-#message = b"this is a very secret message"
-#ciphertext = encrypt(message, pubk)
-#
-#out = "private_key.pem"
-#save_key(pk, out)
-#
-#nk = load_key(out)
-#plaintext = decrypt(ciphertext, nk)
-#assert(message == plaintext)
-#
-#public_key = get_public_key_pem(pk.public_key())
