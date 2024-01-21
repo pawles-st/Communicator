@@ -148,6 +148,20 @@ def get_messages_sent_after_x(connection, convo_id, date):
 	result = cursor.fetchall()
 	return result
 
+def edit_message(connection, text, message_id):
+	cursor = connection.cursor()
+	query = "UPDATE message SET message_text = %s WHERE message_id = %s"
+	cursor.execute(query(text,message_id,))
+	connection.commit()
+	cursor.close()
+
+def delete_message(connection, message_id):
+	cursor = connection.cursor()
+	query = "DELETE FROM message WHERE message_id = %s"
+	cursor.execute(query(message_id,))
+	connection.commit()
+	cursor.close()
+
 cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
 								   host=db_credentials["host"], database=db_credentials["database"],
 								   port=db_credentials["port"])
