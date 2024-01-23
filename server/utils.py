@@ -3,7 +3,8 @@ db_credentials = {
     "password": "test", # "root" u Wojtka
     "host": "localhost",
     "database": "chat",
-    "port": "3333", # "3306" u Wojtka
+    # "port": "3333", # "3306" u Wojtka
+    "port": 3333
 }
 
 protocol = {

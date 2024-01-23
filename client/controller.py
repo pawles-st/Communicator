@@ -226,7 +226,6 @@ class Controller():
                                 salt = bytes(salt, "utf-8")
                                 pass_bytes = password.encode("utf-8")
                                 pass_hash = bcrypt.hashpw(pass_bytes, salt)
-                                # self.socket.send(bytes((login, pass_hash), "utf-8"))
 
                                 # create the private key and save it
 
@@ -240,17 +239,27 @@ class Controller():
                                         encoding=serialization.Encoding.PEM,
                                         format=serialization.PublicFormat.SubjectPublicKeyInfo
                                 )
+                                self.socket.send(bytes("SEND_KEY " + public_key_pem.decode("utf-8"), "utf-8"))
 
-                                #self.socket.send(public_key_pem)
-                                self.socket.send(bytes(protocolFromClient["registerData"] + " " + login + " " + pass_hash.decode("utf-8") + " " + public_key_pem.decode("utf-8"), "utf-8"))
-                                # self.socket.send(bytes("REGISTER_DATA " + login + " " + pass_hash + " " + public_key_pem, "utf-8"))
-
-                                # TODO: public key verification?
+                                # verify access to the private key associated with client's public key
 
                                 res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
-                                if res.startswith(protocolFromServer["registerSuccess"]):
-                                    self.app.displayMessage("Zarejestrowano", -1)
+                                res = res.split(' ', 1)
+                                res = res[1]
+                                res = base64.b64decode(res)
+                                decoded_verification_string = decrypt(res, self.private_key)
+                                self.socket.send(bytes("VERIFICATION " + decoded_verification_string.decode("utf-8"), "utf-8"))
 
+                                res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                                if res.startswith("VERIFIED"):
+
+                                    # send the remaining data (login and hashed password)
+                                    self.socket.send(bytes(protocolFromClient["registerData"] + " " + login + " " + pass_hash.decode("utf-8"), "utf-8"))
+                                    res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
+                                    if res.startswith(protocolFromServer["registerSuccess"]):
+                                        self.app.displayMessage("Zarejestrowano", -1)
+                                else:
+                                    self.app.displayMessage("Nie udało się zweryfikować dostępu do klucza prywatnego", 0)
                             elif res.startswith(protocolFromServer["emailTaken"]):
                                 self.app.displayMessage("Email jest już zajęty", 0)
 
@@ -279,6 +288,7 @@ class Controller():
         try:
             host = '192.168.100.7'
             # host = '127.0.1.1'
+            # host = '172.23.48.1'
             port = 50005
             self.socket.connect((host, port))
         except ConnectionRefusedError as err:

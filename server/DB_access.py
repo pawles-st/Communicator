@@ -1,4 +1,5 @@
-import mariadb.connector
+import mysql.connector
+import mariadb
 import datetime
 from utils import db_credentials
 
@@ -83,26 +84,26 @@ def get_key(connection, mail):
 def get_message_text_by_id(connection, mess_id):
 	cursor = connection.cursor()
 	query = "SELECT message_text FROM message WHERE message_id = %s"
-	cursor.execute(query(mess_id,))
+	cursor.execute(query, (mess_id,))
 	result = cursor.fetchone()
 	return result
 def get_all_messages_from_convo(connection, convo_id):
 	cursor = connection.cursor()
 	query = "SELECT message_text FROM message WHERE conversation_id = %s"
-	cursor.execute(query(convo_id,))
+	cursor.execute(query, (convo_id,))
 	result = cursor.fetchall()
 	return result
 
 def get_all_messages_with_senders_from_convo(connection, convo_id):
 	cursor = connection.cursor()
 	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s"
-	cursor.execute(query(convo_id, ))
+	cursor.execute(query, (convo_id, ))
 	result = cursor.fetchall()
 	return result
 def get_user_conversations(connection, mail):
 	cursor = connection.cursor()
 	query = "SELECT conversation_id FROM conversation_member WHERE user_email = %s"
-	cursor.execute(query(mail, ))
+	cursor.execute(query, (mail, ))
 	result = cursor.fetchall()
 	return result
 
@@ -110,62 +111,64 @@ def get_user_conversations(connection, mail):
 def get_x_latest_messages_from_convo_by_date(connection, convo_id, x):
 	cursor = connection.cursor()
 	query = "SELECT message_text FROM message WHERE conversation_id = %s ORDER BY datetime_of_sending DESC LIMIT %s"
-	cursor.execute(query(convo_id,x,))
+	cursor.execute(query, (convo_id,x,))
 	result = cursor.fetchall()
 	return result
 
 def get_x_latest_messages_with_senders_from_convo_by_date(connection, convo_id, x):
 	cursor = connection.cursor()
 	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s ORDER BY datetime_of_sending DESC LIMIT %s"
-	cursor.execute(query(convo_id,x,))
+	cursor.execute(query, (convo_id,x,))
 	result = cursor.fetchall()
 	return result
 
 def get_x_latest_messages_from_convo_by_id(connection, convo_id, x):
 	cursor = connection.cursor()
 	query = "SELECT message_text FROM message WHERE conversation_id = %s ORDER BY message_id DESC LIMIT %s"
-	cursor.execute(query(convo_id,x))
+	cursor.execute(query, (convo_id,x))
 	result = cursor.fetchall()
 	return result
 
 def get_x_latest_messages_with_senders_from_convo_by_id(connection, convo_id, x):
 	cursor = connection.cursor()
 	query = "SELECT sender_email, message_text FROM message WHERE conversation_id = %s ORDER BY message_id DESC LIMIT %s"
-	cursor.execute(query(convo_id,x))
+	cursor.execute(query, (convo_id,x))
 	result = cursor.fetchall()
 	return result
 
 def get_x_messages_with_senders_with_id_less_than(connection, convo_id, earlier_than_id, no_of_messages):
 	cursor = connection.cursor()
 	query = "SELECT sender_email,message_text FROM message WHERE conversation_id = %s AND message_id < %s ORDER BY message_id DESC LIMIT %s"
-	cursor.execute(query(convo_id,earlier_than_id,no_of_messages))
+	cursor.execute(query, (convo_id,earlier_than_id,no_of_messages))
 	result = cursor.fetchall()
 	return result
 def get_messages_sent_after_x(connection, convo_id, date):
 	cursor = connection.cursor()
 	query = "SELECT sender_email,message_text FROM message WHERE conversation_id = %s AND datetime_of_sending > %s ORDER BY datetime_of_sending DESC"
-	cursor.execute(query(convo_id,date,))
+	cursor.execute(query, (convo_id,date,))
 	result = cursor.fetchall()
 	return result
 
 def edit_message(connection, text, message_id):
 	cursor = connection.cursor()
 	query = "UPDATE message SET message_text = %s WHERE message_id = %s"
-	cursor.execute(query(text,message_id,))
+	cursor.execute(query, (text,message_id,))
 	connection.commit()
 	cursor.close()
 
 def delete_message(connection, message_id):
 	cursor = connection.cursor()
 	query = "DELETE FROM message WHERE message_id = %s"
-	cursor.execute(query(message_id,))
+	cursor.execute(query, (message_id,))
 	connection.commit()
 	cursor.close()
 
-cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
+# cnx = mysql.connector.connect(user=db_credentials["user"], password=db_credentials["password"],
+# 								   host=db_credentials["host"], database=db_credentials["database"],
+# 								   port=db_credentials["port"])
+cnx = mariadb.connect(user=db_credentials["user"], password=db_credentials["password"],
 								   host=db_credentials["host"], database=db_credentials["database"],
 								   port=db_credentials["port"])
-
 cursor = cnx.cursor()
 #create_user(cnx,2,"siema","okoń",datetime.datetime.now(),"haha@wp.pl","123k5432wibblywobbly")
 # get_all_users(cnx)
