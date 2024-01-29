@@ -24,7 +24,7 @@ def tex2svg(formula, fontsize=100, dpi=300):
     #             bbox_inches='tight', pad_inches=0.0)
 
     fig.savefig(output, dpi=dpi, transparent=True, format='svg',
-                bbox_inches='tight', pad_inches=0.0)
+                bbox_inches='tight', pad_inches=0.1)
 
     plt.close(fig)
 

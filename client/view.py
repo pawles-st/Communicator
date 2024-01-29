@@ -28,8 +28,15 @@ class SvgWidget(QSvgWidget):
             painter = QPainter(self)
             size = renderer.defaultSize()
             ratio = size.height()/size.width()
-            length = min(self.width(), self.height())
-            renderer.render(painter, QRectF(0, 0, length, ratio * length))
+            # length = min(self.width(), self.height())
+            # renderer.render(painter, QRectF(0, 0, length*2, ratio * length*2))
+            if size.width() < self.width():
+                renderer.render(painter, QRectF(0, 0, self.height() / ratio, self.height()))
+            else:
+                renderer.render(painter, QRectF(0, 0, self.width(), self.width()*ratio))
+
+            # length = self.height()
+            # renderer.render(painter, QRectF(0, 0, length/ratio, length))
             painter.end()
 
 class App(QWidget):
@@ -91,15 +98,17 @@ class App(QWidget):
 
         # self.controller.getUserNick()
 
+        # self.latexTest = QSvgWidget()
         self.latexTest = SvgWidget()
         # self.latexTest.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
         # FORMULA = r'\int_{-\infty}^\infty e^{-x^2}\,dx = \sqrt{\pi}'
         FORMULA = r'x_k =  \frac{b_k - \sum_{j = k + 1}^{n}a_{kj}x_j}{a_{kk}}'
+        # FORMULA = r'sample\, latext'
         self.latexTest.load(tex2svg(FORMULA))
         self.layout.addWidget(self.latexTest, 3, 0)
 
 
-        self.show()
+        self.showMaximized()
 
     # def tex2svg(formula, fontsize=12, dpi=300):
     #     """Render TeX formula to SVG.
@@ -153,10 +162,14 @@ class App(QWidget):
         self.chatBox.clear()
         for messageInfo in messageHistory:
             text = str(messageInfo)  # tutaj sparsować dicta
-            # TODO: w displayMessage wysyłać dicta??
+            # TODO: ogarnąć coś z username
             self.displayMessage(text, 0)
 
     def sendButtonClicked(self):
+        # print(self.textEditor.text())
+        # textEditorValue = self.textEditor.text().replace("\\\\", "\\")
+        # print("boru", bytes(textEditorValue, 'utf-8'))
+
         textEditorValue = self.textEditor.text()
         self.textEditor.setText("")
         self.controller.current_command = textEditorValue
@@ -175,14 +188,43 @@ class App(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
+    custom_font = QFont()
+    custom_font.setPointSize(15)
+    ex.setFont(custom_font)
 
 
     def displayMessageSlot(msg, userName):
         if userName == "-1":
             ex.chatBox.insertPlainText("info od serwera:\n")
-
-        if userName == ex.currentlyOpenedChat or userName == "-1" or userName == "0":
+        if userName in {"-1", "0"}:
             ex.chatBox.insertPlainText(msg + "\n")
+            return
+        msg = eval(msg)
+
+        print("typ: ", type(msg))
+        print("msg: ", msg)
+
+        if type(msg) == dict:
+            print("ggg", msg["text"])
+            if msg["text"][0] == '$' and msg["text"][-1] == '$':
+                print("eluffka")
+                try:
+                    latex = msg["text"][1:-1].decode("string_escape")
+                    print("tge rocj")
+                except Exception:
+                    latex = msg["text"][1:-1]
+                    print("g24t")
+                FORMULA = rf'{latex}'
+                ex.layout.removeWidget(ex.latexTest)
+                ex.latexTest.deleteLater()
+                del ex.latexTest
+                ex.latexTest = SvgWidget()
+                ex.latexTest.load(tex2svg(FORMULA))
+                ex.layout.addWidget(ex.latexTest, 3, 0)
+        if userName == ex.currentlyOpenedChat or userName == "-1" or userName == "0":
+            # TODO parsowanie dicta
+            parsedDict = str(msg)
+            ex.chatBox.insertPlainText(parsedDict + "\n")
 
 
     def displayLoggedUserNameSlot(userName):

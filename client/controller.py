@@ -3,14 +3,18 @@ import socket
 import time
 import _thread
 import bcrypt
+import sys
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from model import *
 from encryption import *
 
+
 class Controller():
     __SOCKET_RECEIVE_SIZE = 1024
     __KEY_FILEPATH = "private_key.pem"
+    if len(sys.argv) >= 2:
+        __KEY_FILEPATH = sys.argv[1]
 
     def __init__(self):
         self.socket = None
@@ -40,7 +44,6 @@ class Controller():
             message = str(data.decode('utf-8'))
 
             if message.startswith(protocolFromServer["receivedKey"]):
-
                 # save public key of current interlocutor
 
                 words = message.split(' ', 1)
@@ -64,7 +67,9 @@ class Controller():
                 # message_text = decrypt(message_cipher[2:-1], self.private_key)
                 print(message_cipher)
                 message_text = decrypt(base64.b64decode(message_cipher), self.private_key)
-
+                print("oyoo", message_text)
+                message_text = message_text.decode('utf-8')
+                print("oyoo", message_text)
                 # add the message to the chat history
 
                 self.model.addUserChatHistory(user_name, 1, message_text)
@@ -76,11 +81,14 @@ class Controller():
                 words = message.split(" ", 1)
                 user = words[1]
                 self.app.addOnlineUser(user)
+            elif message.startswith(protocolFromServer["userLeft"]):
+                user = message[(len(protocolFromServer["userLeft"]) + 1):]
+                self.app.removeOnlineUser(user)
             else:
                 self.app.displayMessage(message, -1)
 
     def send(self):
-         while not self.end:
+        while not self.end:
             time.sleep(0.1)
             # message = protocol["send"] + ' ' + input()            # TODO: naprawić, żeby wysyłało SEND tylko gdy nie zaczyna się od słowa kluczowego protkołu
 
@@ -96,11 +104,11 @@ class Controller():
 
                         req = protocolFromClient["getKey"] + " " + self.interlocutorId
                         self.socket.send(bytes(req, "utf-8"))
-                        self.current_message = command.split()[1]
+                        self.current_message = command.split(' ', 1)[1]
                         self.current_command = None
 
                     else:
-
+                        self.current_message = command.split(' ', 1)[1]
                         # add the message to the chat history
                         print(self.current_command)
                         print(self.current_message)
@@ -116,7 +124,8 @@ class Controller():
                         # print(decrypt(encrypted_message, self.private_key))
                         # print(base64.b64encode(encrypted_message).decode("utf-8"))
                         # req = protocolFromClient["send"] + " " + self.interlocutorId + " " + str(encrypted_message)
-                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + base64.b64encode(encrypted_message).decode("utf-8")
+                        req = protocolFromClient["send"] + " " + self.interlocutorId + " " + base64.b64encode(
+                            encrypted_message).decode("utf-8")
                         self.socket.send(bytes(req, "utf-8"))
                         # send the message encrypted with the sender's key
 
@@ -125,15 +134,13 @@ class Controller():
                         # self.socket.send(bytes(req, "utf-8"))
                         # TODO: odkomentowac powyzsze linijki, miec osobne komendy do send encrypted self.private_key i send encrypted interlocuterKey
 
+    #    def sendMessage(self, msg):
+    #
+    #        if self.logged and self.interlocutorId != "":
+    #            self.model.addUserChatHistory(self.interlocutorId, 0, msg)
+    #            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
+    #        self.socket.send(bytes(msg, "utf-8"))
 
-
-#    def sendMessage(self, msg):
-#
-#        if self.logged and self.interlocutorId != "":
-#            self.model.addUserChatHistory(self.interlocutorId, 0, msg)
-#            msg = protocolFromClient["send"] + " " + self.interlocutorId + " " + msg
-#        self.socket.send(bytes(msg, "utf-8"))
-            
     def authorise(self):
 
         # send requests to server until logged in or exits
@@ -153,7 +160,7 @@ class Controller():
                 # match the request against the protocol
 
                 if action == protocolFromClient["login"]:
-                    if self.private_key is None: # can't login without the private key
+                    if self.private_key is None:  # can't login without the private key
                         self.app.displayMessage("Nie udało się odnaleźć pliku z kluczem prywatnym", 0)
                     else:
                         if len(data) == 2:
@@ -236,8 +243,8 @@ class Controller():
 
                                 public_key = get_public_key(self.private_key)
                                 public_key_pem = public_key.public_bytes(
-                                        encoding=serialization.Encoding.PEM,
-                                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                                    encoding=serialization.Encoding.PEM,
+                                    format=serialization.PublicFormat.SubjectPublicKeyInfo
                                 )
                                 self.socket.send(bytes("SEND_KEY " + public_key_pem.decode("utf-8"), "utf-8"))
 
@@ -248,25 +255,30 @@ class Controller():
                                 res = res[1]
                                 res = base64.b64decode(res)
                                 decoded_verification_string = decrypt(res, self.private_key)
-                                self.socket.send(bytes("VERIFICATION " + decoded_verification_string.decode("utf-8"), "utf-8"))
+                                self.socket.send(
+                                    bytes("VERIFICATION " + decoded_verification_string.decode("utf-8"), "utf-8"))
 
                                 res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
                                 if res.startswith("VERIFIED"):
 
                                     # send the remaining data (login and hashed password)
-                                    self.socket.send(bytes(protocolFromClient["registerData"] + " " + login + " " + pass_hash.decode("utf-8"), "utf-8"))
+                                    self.socket.send(bytes(
+                                        protocolFromClient["registerData"] + " " + login + " " + pass_hash.decode(
+                                            "utf-8"), "utf-8"))
                                     res = self.socket.recv(self.__SOCKET_RECEIVE_SIZE).decode("utf-8")
                                     if res.startswith(protocolFromServer["registerSuccess"]):
                                         self.app.displayMessage("Zarejestrowano", -1)
                                 else:
-                                    self.app.displayMessage("Nie udało się zweryfikować dostępu do klucza prywatnego", 0)
+                                    self.app.displayMessage("Nie udało się zweryfikować dostępu do klucza prywatnego",
+                                                            0)
                             elif res.startswith(protocolFromServer["emailTaken"]):
                                 self.app.displayMessage("Email jest już zajęty", 0)
 
                         else:
                             self.app.displayMessage("Proszę wpisać to samo hasło w potwierdzeniu", 0)
                     else:
-                        self.app.displayMessage("Proszę podać <email> <nazwę_użytkownika> <hasło> <potwierdzenie_hasła>", 0)
+                        self.app.displayMessage(
+                            "Proszę podać <email> <nazwę_użytkownika> <hasło> <potwierdzenie_hasła>", 0)
         else:
             raise TerminateException("Nieudany login")
 
@@ -278,7 +290,9 @@ class Controller():
             self.private_key = load_key(Controller.__KEY_FILEPATH)
         except FileNotFoundError:
             # there is no private key yet; the user won't be able to make any LOGIN requests
-            self.app.displayMessage("Nie znaleziono klucza prywatnego. Jeśli nie posiadasz jeszcze konta, zignoruj tę wiadomość. W przeciwnym wypadku proszę umieścić klucz prywatny w folderze z aplikacją\n", 0)
+            self.app.displayMessage(
+                "Nie znaleziono klucza prywatnego. Jeśli nie posiadasz jeszcze konta, zignoruj tę wiadomość. W przeciwnym wypadku proszę umieścić klucz prywatny w folderze z aplikacją\n",
+                0)
         except ValueError:
             self.app.displayMessage("Nie udało się wczytać klucza prywatnego: plik mógł zostać uszkodzony.\n", 0)
 
@@ -298,7 +312,9 @@ class Controller():
         # display the welcoming message
 
         self.app.displayMessage("Proszę się zalogować wpisując '" + protocolFromClient["login"] + " <mail> <hasło>'\n"
-              "lub zarejestrować wpisując '" + protocolFromClient["register"] + " <mail> <nazwa_użytkownika> <hasło> <potwierdzenie_hasła>'", -1)
+                                                                                                  "lub zarejestrować wpisując '" +
+                                protocolFromClient[
+                                    "register"] + " <mail> <nazwa_użytkownika> <hasło> <potwierdzenie_hasła>'", -1)
 
         # log in/register
 
