@@ -75,9 +75,13 @@ class App(QWidget):
 
         # tu będą wiadodmości
         self.chatBox = QPlainTextEdit(self)
-        self.chatBox.setDisabled(True)
+        # self.chatBox.setDisabled(True)
+        self.chatBox.setReadOnly(True)
         # self.chatBox.move(20, 120)
         self.chatBox.resize(1280, 640)
+        # scrollbar = self.chatBox.verticalScrollBar()
+        # self.chatBox.verticalScrollBar().minimum()
+        self.chatBox.verticalScrollBar().setValue(self.chatBox.verticalScrollBar().minimum())
         self.layout.addWidget(self.chatBox, 1, 0, 1, 2)
         # self.layout.addWidget(self.chatBox, 0, 1)
 
@@ -99,14 +103,14 @@ class App(QWidget):
         # self.controller.getUserNick()
 
         # self.latexTest = QSvgWidget()
+        self.currentLatex = r'sample\, latext'
         self.latexTest = SvgWidget()
         # self.latexTest.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
         # FORMULA = r'\int_{-\infty}^\infty e^{-x^2}\,dx = \sqrt{\pi}'
-        FORMULA = r'x_k =  \frac{b_k - \sum_{j = k + 1}^{n}a_{kj}x_j}{a_{kk}}'
-        # FORMULA = r'sample\, latext'
-        self.latexTest.load(tex2svg(FORMULA))
+        # FORMULA = r'x_k =  \frac{b_k - \sum_{j = k + 1}^{n}a_{kj}x_j}{a_{kk}}'
+        # FORMULA =
+        self.latexTest.load(tex2svg(self.currentLatex))
         self.layout.addWidget(self.latexTest, 3, 0)
-
 
         self.showMaximized()
 
@@ -143,7 +147,8 @@ class App(QWidget):
         listOfUsers = onlineUsers[1:-1].split(', ')
         for user in listOfUsers:
             # self.onlineUsersListWidget.addItem(user)
-            self.addOnlineUser(user[1:-1])
+            if user[1:-1] != self.model.getClientUserName():
+                self.addOnlineUser(user[1:-1])
 
     def addOnlineUser(self, user):
         self.model.addOnlineUser(user)
@@ -159,11 +164,11 @@ class App(QWidget):
     def displayMessageHistory(self):
         messageHistory = self.model.getUserChatHistory(self.currentlyOpenedChat)
         # print(messageHistory)
+        # print("messageHistory: ", messageHistory)
         self.chatBox.clear()
         for messageInfo in messageHistory:
-            text = str(messageInfo)  # tutaj sparsować dicta
-            # TODO: ogarnąć coś z username
-            self.displayMessage(text, 0)
+            text = str(messageInfo)
+            self.displayMessage(text, self.currentlyOpenedChat)
 
     def sendButtonClicked(self):
         # print(self.textEditor.text())
@@ -171,6 +176,10 @@ class App(QWidget):
         # print("boru", bytes(textEditorValue, 'utf-8'))
 
         textEditorValue = self.textEditor.text()
+
+        if not (textEditorValue.startswith("LOGIN") or textEditorValue.startswith("REGISTER")):
+            textEditorValue = "SEND " + textEditorValue
+
         self.textEditor.setText("")
         self.controller.current_command = textEditorValue
 
@@ -194,6 +203,8 @@ if __name__ == '__main__':
 
 
     def displayMessageSlot(msg, userName):
+        # print("typ przed: ", type(msg))
+        # print("userName przed", userName)
         if userName == "-1":
             ex.chatBox.insertPlainText("info od serwera:\n")
         if userName in {"-1", "0"}:
@@ -201,29 +212,50 @@ if __name__ == '__main__':
             return
         msg = eval(msg)
 
-        print("typ: ", type(msg))
-        print("msg: ", msg)
+        # print("typ: ", type(msg))
+        # print("msg: ", msg)
 
-        if type(msg) == dict:
-            print("ggg", msg["text"])
+        if type(msg) == dict and userName == ex.currentlyOpenedChat:
+            # displayMessage = True
+            text = msg.get('text', '')
             if msg["text"][0] == '$' and msg["text"][-1] == '$':
-                print("eluffka")
                 try:
                     latex = msg["text"][1:-1].decode("string_escape")
-                    print("tge rocj")
                 except Exception:
                     latex = msg["text"][1:-1]
-                    print("g24t")
                 FORMULA = rf'{latex}'
                 ex.layout.removeWidget(ex.latexTest)
                 ex.latexTest.deleteLater()
                 del ex.latexTest
                 ex.latexTest = SvgWidget()
-                ex.latexTest.load(tex2svg(FORMULA))
+                try:
+                    ex.latexTest.load(tex2svg(FORMULA))
+                    # displayMessage = False
+                    ex.currentLatex = FORMULA
+                except:
+                    # displayMessage = True
+                    ex.latexTest.load(tex2svg(ex.currentLatex))
                 ex.layout.addWidget(ex.latexTest, 3, 0)
-        if userName == ex.currentlyOpenedChat or userName == "-1" or userName == "0":
-            # TODO parsowanie dicta
-            parsedDict = str(msg)
+                # return
+            # if displayMessage:
+            #     temp = msg.get('from', -1)
+            #     sender = ''
+            #     if temp == 0:
+            #         sender = 'Ty: '
+            #     elif temp == 1:
+            #         sender = str(ex.currentlyOpenedChat) + ": "
+            #
+            #     parsedDict = sender + text
+            #     ex.chatBox.insertPlainText(parsedDict + "\n")
+
+            temp = msg.get('from', -1)
+            sender = ''
+            if temp == 0:
+                sender = 'Ty: '
+            elif temp == 1:
+                sender = str(ex.currentlyOpenedChat) + ": "
+
+            parsedDict = sender + text
             ex.chatBox.insertPlainText(parsedDict + "\n")
 
 

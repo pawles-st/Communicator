@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 plt.rc('mathtext', fontset='cm')
 
 
-def tex2svg(formula, fontsize=100, dpi=300):
+def tex2svg(formula, fontsize=60, dpi=300):
     """Render TeX formula to SVG.
     Args:
         formula (str): TeX formula.

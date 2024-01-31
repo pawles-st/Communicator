@@ -52,7 +52,7 @@ class Controller():
 
                 self.current_command = protocolFromClient["send"] + " " + self.current_message
 
-            if message.startswith(protocolFromServer["receivedMessage"]):
+            elif message.startswith(protocolFromServer["receivedMessage"]):
 
                 # read the user and message cipher
 
@@ -65,11 +65,9 @@ class Controller():
                 # message_text = decrypt(message_cipher[2:-1], self.private_key)
                 # print(message_cipher[2:-1])
                 # message_text = decrypt(message_cipher[2:-1], self.private_key)
-                print(message_cipher)
+                # print(message_cipher)
                 message_text = decrypt(base64.b64decode(message_cipher), self.private_key)
-                print("oyoo", message_text)
                 message_text = message_text.decode('utf-8')
-                print("oyoo", message_text)
                 # add the message to the chat history
 
                 self.model.addUserChatHistory(user_name, 1, message_text)
@@ -110,8 +108,8 @@ class Controller():
                     else:
                         self.current_message = command.split(' ', 1)[1]
                         # add the message to the chat history
-                        print(self.current_command)
-                        print(self.current_message)
+                        # print(self.current_command)
+                        # print(self.current_message)
                         # message = self.current_command.split(" ", 1)[1]
                         message = self.current_message
                         self.model.addUserChatHistory(self.interlocutorId, 0, message)
@@ -202,7 +200,7 @@ class Controller():
                                 elif res.startswith(protocolFromServer["userNotFound"]):
                                     self.app.displayMessage("Nieprawidłowy email lub hasło", 0)
                                 else:
-                                    print(res)
+                                    # print(res)
                                     raise ProtocolException("Nieprawidłowa odpowiedź")
                             elif res.startswith(protocolFromServer["userNotFound"]):
                                 self.app.displayMessage("Nieprawidłowy email lub hasło", 0)
@@ -303,6 +301,7 @@ class Controller():
             host = '192.168.100.7'
             # host = '127.0.1.1'
             # host = '172.23.48.1'
+            # host = '192.168.114.247'
             port = 50005
             self.socket.connect((host, port))
         except ConnectionRefusedError as err:
